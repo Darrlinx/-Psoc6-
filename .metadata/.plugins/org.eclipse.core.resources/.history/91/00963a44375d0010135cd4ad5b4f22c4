@@ -1,0 +1,31 @@
+#include <Arduino.h>
+#define hw D7
+int currentcount = 0;
+unsigned long lastTime = 0;
+float dropsPerMinute = 0;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(hw, INPUT);
+  lastTime = millis();
+}
+
+void loop() {
+  if (digitalRead(hw) == LOW) {
+    Serial.println(currentcount);
+  }
+  else {
+    currentcount = currentcount + 1;
+    unsigned long currentTime = millis();
+    unsigned long timeElapsed = currentTime - lastTime;
+
+    // Calculate drops per minute (60000ms = 1 minute)
+    if (timeElapsed > 0) {
+      dropsPerMinute = 60000.0 / timeElapsed;
+    }
+
+    lastTime = currentTime;
+    Serial.println(currentcount);
+  }
+  delay(100);
+}

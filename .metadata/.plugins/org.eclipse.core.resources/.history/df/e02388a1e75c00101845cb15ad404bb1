@@ -1,0 +1,74 @@
+//#include <SPI.h>
+//#include <Wire.h>
+//#include <Adafruit_GFX.h>
+//#include <Adafruit_SSD1306.h>
+//#include "rtthread.h"
+//#include "RTduino.h"
+//#include "Config.h"
+//
+//#if defined DIS_THREAD_ENABLE
+//
+//#define SCREEN_WIDTH 128 // OLED display width, in pixels
+//#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+//
+//#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+//#define SCREEN_ADDRESS 0x3C //由于SSD1306屏幕出场批次不同，地址有些区别，如果0x3C无法正常显示，可以切换成0x3D
+//Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+//
+//extern rt_mailbox_t Temp_Humi_MailBox_Dis;
+//extern rt_mq_t Air_Pressure_MQ_Dis;
+//static void *Recv_SHT_Data;
+//static float Recv_BMP_Data[2] = {0};
+//static float Temp, Humi, Air_P;
+//
+//
+//void SSD1306_setup()
+//{
+//    Serial.begin();
+//
+//    // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+//    if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+//        Serial.println(F("SSD1306 allocation failed"));
+//        for(;;); // Don't proceed, loop forever
+//    }
+//    display.clearDisplay();
+//    display.setTextSize(1);             // Normal 1:1 pixel scale
+//    display.setTextColor(SSD1306_WHITE);        // Draw white text
+//    display.setCursor(0,0);             // Start at top-left corner
+//
+//    delay(500);
+//}
+//
+//void SSD1306_loop()
+//{
+//    if(rt_mb_recv(Temp_Humi_MailBox_Dis, (rt_ubase_t *)&Recv_SHT_Data, RT_WAITING_FOREVER) != RT_EOK)
+//    {
+//        rt_kprintf("Dis_Thread MB Recv Data Error\n");
+//    }
+//    if(rt_mq_recv(Air_Pressure_MQ_Dis, &Recv_BMP_Data, sizeof(Recv_BMP_Data), RT_WAITING_FOREVER) == 0)
+//    {
+//        rt_kprintf("Dis_Thread MQ Recv Data Error\n");
+//    }
+//
+//    display.clearDisplay();
+//
+//    display.setCursor(0,0);             // Start at top-left corner
+//    display.print("Temp: ");
+//    display.println(((float *)Recv_SHT_Data)[0]);
+//    display.print("Humi: ");
+//    display.println(((float *)Recv_SHT_Data)[1]);
+//    display.print("Air_P: ");
+//    display.println(Recv_BMP_Data[1]);
+//
+//    display.display();
+//}
+//
+////RTduino线程初始化
+//static int rtduino_init(void)
+//{
+//    rtduino_sketch_loader_create("RT_SSD", SSD1306_setup, SSD1306_loop);
+//    return 0;
+//}
+//INIT_COMPONENT_EXPORT(rtduino_init);
+//
+//#endif

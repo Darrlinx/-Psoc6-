@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="将资源“arduino/applications/hw_test”重命名为“hw_test.cpp”" description="重命名资源“hw_test”" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="applications/hw_test" name="hw_test.cpp" stamp="1752112171588" updateReferences="true"/>
+</session>

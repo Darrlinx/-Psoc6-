@@ -1,0 +1,94 @@
+#include <Wire.h>
+#include "Adafruit_TCS34725.h"
+#include "RTduino.h"
+
+/* 线程通信配置 */
+#if defined IOT_THREAD_ENABLE
+#define RGB_EVENT 1 << 2                // RGB传感器事件标志
+extern rt_event_t IOT_EVENT;            // 外部事件集
+rt_mq_t RGB_Data_MQ = RT_NULL;          // RGB数据消息队列
+#endif
+
+#if defined DIS_THREAD_ENABLE
+rt_mq_t RGB_Data_MQ_Dis = RT_NULL;      // 显示线程消息队列
+#endif
+
+/* 数据结构 */
+struct RGB_Data {
+    uint16_t r, g, b, c;
+    uint16_t colorTemp;
+    uint16_t lux;
+};
+
+Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_614MS, TCS34725_GAIN_1X);
+
+void RGB_setup() {
+    Serial.begin(115200);
+
+    /* 创建消息队列 */
+    #if defined IOT_THREAD_ENABLE
+    RGB_Data_MQ = rt_mq_create("RGB_MQ", sizeof(RGB_Data), 10, RT_IPC_FLAG_PRIO);
+    if(RGB_Data_MQ == RT_NULL) {
+        Serial.println("RGB MessageQueue Create Error");
+    }
+    #endif
+
+    #if defined DIS_THREAD_ENABLE
+    RGB_Data_MQ_Dis = rt_mq_create("RGB_MQ_Dis", sizeof(RGB_Data), 10, RT_IPC_FLAG_PRIO);
+    if(RGB_Data_MQ_Dis == RT_NULL) {
+        Serial.println("RGB Display MQ Create Error");
+    }
+    #endif
+
+    /* 初始化传感器 */
+    if (!tcs.begin()) {
+        Serial.println("No TCS34725 found");
+        while (1); // 硬件初始化失败，阻塞
+    }
+
+    Serial.println("TCS34725 RGB Sensor Ready");
+}
+
+void RGB_loop() {
+    static RGB_Data sensorData;
+
+    /* 数据采集 */
+    tcs.getRawData(&sensorData.r, &sensorData.g, &sensorData.b, &sensorData.c);
+    sensorData.colorTemp = tcs.calculateColorTemperature_dn40(sensorData.r, sensorData.g, sensorData.b, sensorData.c);
+    sensorData.lux = tcs.calculateLux(sensorData.r, sensorData.g, sensorData.b);
+
+    /* 调试输出 */
+    #ifndef NO_DEBUG_OUTPUT
+    Serial.print("R:"); Serial.print(sensorData.r);
+    Serial.print(" G:"); Serial.print(sensorData.g);
+    Serial.print(" B:"); Serial.print(sensorData.b);
+    Serial.print(" C:"); Serial.print(sensorData.c);
+    Serial.print(" | Temp:"); Serial.print(sensorData.colorTemp);
+    Serial.print("K Lux:"); Serial.println(sensorData.lux);
+    #endif
+
+    /* 线程通信 */
+    #if defined IOT_THREAD_ENABLE
+    if(IOT_EVENT != RT_NULL) {
+        rt_event_send(IOT_EVENT, RGB_EVENT);
+        if(rt_mq_send(RGB_Data_MQ, &sensorData, sizeof(RGB_Data)) != RT_EOK) {
+            Serial.println("RGB MQ Send Error");
+        }
+    }
+    #endif
+
+    #if defined DIS_THREAD_ENABLE
+    if(rt_mq_send(RGB_Data_MQ_Dis, &sensorData, sizeof(RGB_Data)) != RT_EOK) {
+        Serial.println("RGB Display MQ Send Error");
+    }
+    #endif
+
+    rt_thread_mdelay(500); // RT-Thread专用延时
+}
+
+/* RT-Thread自动初始化 */
+static int rtduino_rgb_init(void) {
+    rtduino_sketch_loader_create("RT_RGB", RGB_setup, RGB_loop);
+    return 0;
+}
+INIT_COMPONENT_EXPORT(rtduino_rgb_init);

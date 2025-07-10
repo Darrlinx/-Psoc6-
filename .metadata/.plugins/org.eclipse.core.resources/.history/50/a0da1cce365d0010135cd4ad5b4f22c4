@@ -1,0 +1,21 @@
+#include <Arduino.h>
+#define hw D7
+int currentcount=0;
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+    pinMode(hw,INPUT);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+
+
+ if (digitalRead(hw) == LOW)
+  Serial.println(currentcount);
+ else
+    currentcount=currentcount+1;
+    Serial.println(currentcount);
+    delay(100);
+
+}

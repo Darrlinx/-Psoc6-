@@ -1,0 +1,118 @@
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include "rtthread.h"
+#include "RTduino.h"
+#include "Config.h"
+
+#if defined DIS_THREAD_ENABLE
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C // 由于SSD1306屏幕出厂批次不同，地址有些区别，如果0x3C无法正常显示，可以切换成0x3D
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+// 外部通信接口声明
+extern rt_mailbox_t Temp_Humi_MailBox_Dis;
+extern rt_mq_t Air_Pressure_MQ_Dis;
+extern rt_mq_t RGB_Data_MQ_Dis;  // 新增RGB数据消息队列
+
+// 数据接收缓冲区
+static void *Recv_SHT_Data;
+static float Recv_BMP_Data[2] = {0};
+static float Recv_RGB_Data[6] = {0};  // 新增RGB数据接收数组
+static float Temp, Humi, Air_P;
+
+void SSD1306_setup()
+{
+    Serial.begin();
+
+    // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+    if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+        Serial.println(F("SSD1306 allocation failed"));
+        for(;;); // Don't proceed, loop forever
+    }
+
+    // 显示初始化设置
+    display.clearDisplay();
+    display.setTextSize(1);             // Normal 1:1 pixel scale
+    display.setTextColor(SSD1306_WHITE); // Draw white text
+    display.setCursor(0,0);             // Start at top-left corner
+    display.display();
+
+    delay(500); // 短暂延迟确保显示稳定
+}
+
+void SSD1306_loop()
+{
+    // 接收温湿度数据(邮箱)
+    if(rt_mb_recv(Temp_Humi_MailBox_Dis, (rt_ubase_t *)&Recv_SHT_Data, RT_WAITING_FOREVER) != RT_EOK)
+    {
+        rt_kprintf("Dis_Thread MB Recv Data Error\n");
+    }
+
+    // 接收气压数据(消息队列)
+    if(rt_mq_recv(Air_Pressure_MQ_Dis, &Recv_BMP_Data, sizeof(Recv_BMP_Data), RT_WAITING_FOREVER) != RT_EOK)
+    {
+        rt_kprintf("Dis_Thread MQ Recv BMP Data Error\n");
+    }
+
+    // 接收RGB数据(消息队列) - 新增部分
+    if(rt_mq_recv(RGB_Data_MQ_Dis, &Recv_RGB_Data, sizeof(Recv_RGB_Data), RT_WAITING_FOREVER) != RT_EOK)
+    {
+        rt_kprintf("Dis_Thread MQ Recv RGB Data Error\n");
+    }
+
+    // 清屏准备新数据
+    display.clearDisplay();
+
+    // 设置起始位置
+    display.setCursor(0, 0);
+
+    // 显示温湿度数据
+    display.print("Temp: ");
+    display.println(((float *)Recv_SHT_Data)[0]);
+
+    display.print("Humi: ");
+    display.println(((float *)Recv_SHT_Data)[1]);
+
+    // 显示气压数据
+    display.print("Air_P: ");
+    display.println(Recv_BMP_Data[1]);
+
+    // 显示RGB数据 - 新增部分
+    display.print("Lux: ");
+    display.print(Recv_RGB_Data[1], 0);
+    display.println(" lx");
+
+    display.print("RGB: ");
+    display.print(Recv_RGB_Data[2], 0); // R
+    display.print(",");
+    display.print(Recv_RGB_Data[3], 0); // G
+    display.print(",");
+    display.print(Recv_RGB_Data[4], 0); // B
+    display.println();
+
+    display.print("CCT: ");
+    display.print(Recv_RGB_Data[0], 0);
+    display.println(" K");
+
+    // 更新显示
+    display.display();
+
+    // 适当延迟，避免刷新过快
+    delay(200);
+}
+
+// RTduino线程初始化
+static int rtduino_init(void)
+{
+    rtduino_sketch_loader_create("RT_SSD", SSD1306_setup, SSD1306_loop);
+    return 0;
+}
+INIT_COMPONENT_EXPORT(rtduino_init);
+
+#endif

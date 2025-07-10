@@ -1,0 +1,79 @@
+/*
+ * Copyright (c) 2006-2023, RT-Thread Development Team
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Change Logs:
+ * Date           Author       Notes
+ * 2022-06-29     Rbb666       first version
+ */
+
+#include <rtthread.h>
+#include <rtdevice.h>
+#include "slider.h"
+
+#include "drv_gpio.h"
+
+#define LED_PIN     GET_PIN(0, 1)
+static rt_thread_t sld_thread = RT_NULL;
+static rt_sem_t trans_done_semphr = RT_NULL;
+
+
+
+
+int main(void)
+
+{
+//    void Slider_thread_entry(void *parameter)
+//   {
+//       Slider_Init();
+//
+//       for (;;)
+//       {
+//           rt_err_t result;
+//           rt_sem_take(trans_done_semphr, RT_WAITING_FOREVER);
+//
+//           /* Process all widgets */
+//           Cy_CapSense_ProcessAllWidgets(&cy_capsense_context);
+//
+//           /* Process touch input */
+//           process_touch();
+//           Cy_CapSense_RunTuner(&cy_capsense_context);
+//
+//           /* Initiate next scan */
+//           Cy_CapSense_ScanAllWidgets(&cy_capsense_context);
+//
+//           rt_thread_mdelay(50);
+//       }
+//   }
+//
+//    int Slider(void)
+//    {
+//        rt_err_t ret = RT_EOK;
+//
+//        sld_thread = rt_thread_create("slider_th",
+//                                      Slider_thread_entry,
+//                                      RT_NULL,
+//                                      1024,
+//                                      25,
+//                                      10);
+//        if (sld_thread != RT_NULL)
+//        {
+//            rt_thread_startup(sld_thread);
+//        }
+//        else
+//        {
+//            ret = -RT_ERROR;
+//        }
+//
+//        return ret;
+//    }
+
+    for (;;)
+    {
+        rt_pin_write(LED_PIN, PIN_HIGH);
+        rt_thread_mdelay(500);
+        rt_pin_write(LED_PIN, PIN_LOW);
+        rt_thread_mdelay(500);
+    }
+}

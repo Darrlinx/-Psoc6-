@@ -1,0 +1,14 @@
+11:14:12 **** Incremental Build of configuration Debug for project arduino ****
+make -j20 all 
+arm-none-eabi-g++ "../applications/BMP_Test.cpp"
+arm-none-eabi-g++ "../applications/SHT31_Test.cpp"
+arm-none-eabi-g++ "../applications/hw_test.cpp"
+linking...
+arm-none-eabi-objcopy -O ihex "rtthread.elf"  "rtthread.hex"
+arm-none-eabi-size --format=berkeley "rtthread.elf"
+   text	   data	    bss	    dec	    hex	filename
+1297428	     60	  62456	1359944	 14c048	rtthread.elf
+
+              Used Size(B)           Used Size(KB)
+Flash:        1297488 B             1267.08 KB
+RAM:            62516 B               61.05 KB

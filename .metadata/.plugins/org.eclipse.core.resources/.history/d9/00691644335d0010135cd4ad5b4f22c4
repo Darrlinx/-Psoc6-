@@ -1,0 +1,46 @@
+#include <Arduino.h>
+#define IR_SENSOR_PIN D7  // Infrared sensor pin
+
+// Global variables
+unsigned int objectCount = 0;      // Object counter
+bool lastState = HIGH;            // Previous sensor state
+unsigned long lastDebounceTime = 0;  // Last state change time
+const int debounceDelay = 50;      // Debounce delay(ms)
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(IR_SENSOR_PIN, INPUT_PULLUP);  // Enable internal pull-up
+  Serial.println("IR Counter Initialized");
+  Serial.println("State | Count");
+  Serial.println("-----------");
+}
+
+void loop() {
+  int currentState = digitalRead(IR_SENSOR_PIN);  // Read current state
+
+  // Debounce handling
+  if (currentState != lastState) {
+    lastDebounceTime = millis();
+  }
+
+  // Process after state stabilizes
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    // Detect state change (LOW means object detected)
+    if (currentState == LOW && lastState == HIGH) {
+      objectCount++;  // Increment counter
+      Serial.print("Object Detected | ");
+      Serial.println(objectCount);
+    }
+    lastState = currentState;  // Update state
+  }
+
+  // Display current count every second (optional)
+  static unsigned long lastPrintTime = 0;
+  if (millis() - lastPrintTime > 1000) {
+    lastPrintTime = millis();
+    Serial.print("Current Count: ");
+    Serial.println(objectCount);
+  }
+
+  delay(10);  // Short delay
+}

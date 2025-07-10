@@ -1,0 +1,120 @@
+//#include <Arduino.h>
+//#include <Wire.h>
+//#include "Adafruit_SHT31.h"
+//#include "rtthread.h"
+//#include "RTduino.h"
+//#include "Config.h"
+//
+//#if defined IOT_THREAD_ENABLE
+//
+//#define SHT_EVENT 1 << 0                        //SHT采集数据
+//
+//extern rt_event_t IOT_EVENT;                  //IOT事件
+//rt_mailbox_t Temp_Humi_MailBox = RT_NULL;       //传递给IOT线程的消息邮箱
+//
+//#endif
+//
+//#if defined DIS_THREAD_ENABLE
+//rt_mailbox_t Temp_Humi_MailBox_Dis = RT_NULL;   //传递给Dis线程的消息邮箱
+//#endif
+//
+//float T_H_Data[2] = {0};                        ////数据收集
+//
+//bool enableHeater = false;
+//uint8_t loopCnt = 0;
+//
+//Adafruit_SHT31 sht31 = Adafruit_SHT31();
+//
+//void SHT_setup() {
+//    Serial.begin();
+//
+//#if defined IOT_THREAD_ENABLE
+//    Temp_Humi_MailBox = rt_mb_create("T_H_MB", 10, RT_IPC_FLAG_PRIO);
+//    if(Temp_Humi_MailBox == RT_NULL)
+//    {
+//        Serial.println("MailBox_IOT Create Error");
+//    }
+//#endif
+//
+//#if defined DIS_THREAD_ENABLE
+//    Temp_Humi_MailBox_Dis = rt_mb_create("T_H_Dis", 10, RT_IPC_FLAG_PRIO);
+//    if(Temp_Humi_MailBox_Dis == RT_NULL)
+//    {
+//        Serial.println("MailBox_Dis Create Error");
+//    }
+//#endif
+//
+//    while (!Serial)
+//        delay(10);     // will pause Zero, Leonardo, etc until serial console opens
+//
+//    Serial.println("SHT31 test");
+//    if (! sht31.begin(0x44)) {   // Set to 0x45 for alternate i2c addr
+//        Serial.println("Couldn't find SHT31");
+//        while (1) delay(1);
+//    }
+//
+//    Serial.print("Heater Enabled State: ");
+//    if (sht31.isHeaterEnabled())
+//        Serial.println("ENABLED");
+//    else
+//        Serial.println("DISABLED");
+//}
+//
+//void SHT_loop() {
+//    float t = sht31.readTemperature();
+//    float h = sht31.readHumidity();
+//
+//    T_H_Data[0] = t;
+//    T_H_Data[1] = h;
+//
+//#ifndef NO_USING_DATA_OUTPUT
+//    if (! isnan(t)) {  // check if 'is not a number'
+//        Serial.print("Temp *C = "); Serial.print(t); Serial.print("\t\t");
+//    } else {
+//        Serial.println("Failed to read temperature");
+//    }
+//
+//    if (! isnan(h)) {  // check if 'is not a number'
+//        Serial.print("Hum. % = "); Serial.println(h);
+//    } else {
+//        Serial.println("Failed to read humidity");
+//    }
+//#endif
+//
+//#if defined IOT_THREAD_ENABLE
+//  //当启动IOT线程的时候
+//    if(IOT_EVENT != RT_NULL)
+//    {
+//      //触发事件，通知IOT线程来取
+//      if(rt_event_send(IOT_EVENT, SHT_EVENT) != RT_EOK)
+//        {
+//            Serial.println("Send EVENT Error\n");
+//        }
+//        //使用消息队列，将数据传输给IOT线程
+//        if(rt_mb_send_wait(Temp_Humi_MailBox, (rt_ubase_t)&T_H_Data, 100) != RT_EOK)
+//        {
+//            Serial.println("Send EMail To IOT Error\n");
+//        }
+//    }
+//#endif
+//
+//#if defined DIS_THREAD_ENABLE
+//    //使用消息邮箱，将数据传输到Display线程
+//    if(rt_mb_send_wait(Temp_Humi_MailBox_Dis, (rt_ubase_t)&T_H_Data, 1000) != RT_EOK)
+//    {
+//        Serial.println("Send EMail To Display Error\n");
+//    }
+//#endif
+//
+//    delay(500);
+//
+//}
+//
+////RTduino线程初始化
+//static int rtduino_init(void)
+//{
+//    rtduino_sketch_loader_create("RT_SHT", SHT_setup, SHT_loop);
+//    return 0;
+//}
+//INIT_COMPONENT_EXPORT(rtduino_init);
+//

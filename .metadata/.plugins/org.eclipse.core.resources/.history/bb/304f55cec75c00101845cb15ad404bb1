@@ -1,0 +1,104 @@
+/*
+ * TCS34725 Liquid Color Identification
+ */
+#include <Wire.h>
+#include "Adafruit_TCS34725.h"
+
+// Using longer integration time for better accuracy
+Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_614MS, TCS34725_GAIN_1X);
+
+// Liquid color database structure
+struct LiquidColor {
+  const char* name;
+  uint16_t r_min, r_max;
+  uint16_t g_min, g_max;
+  uint16_t b_min, b_max;
+  uint16_t c_min; // minimum clear value
+};
+
+// Predefined liquid color ranges (needs calibration)
+const LiquidColor liquidColors[] = {
+  {"Water",     20000, 30000, 20000, 30000, 20000, 30000, 25000},  // Near colorless
+  {"Cola",      5000,  10000, 4000,  8000,  3000,  6000,  8000},   // Dark brown
+  {"OrangeJuice",25000, 35000, 15000, 25000, 5000,  10000, 20000},  // Orange
+  {"GreenTea",  15000, 25000, 20000, 30000, 10000, 20000, 18000},  // Light green
+  {"RedWine",   15000, 25000, 5000,  10000, 5000,  10000, 12000},  // Dark red
+  {"Milk",      30000, 40000, 30000, 40000, 30000, 40000, 35000},  // White
+  {"Coffee",    8000,  15000, 6000,  12000, 4000,  8000,  10000}   // Dark brown
+};
+
+const int colorCount = sizeof(liquidColors)/sizeof(liquidColors[0]);
+
+void setup() {
+  Serial.begin(115200);
+  if (!tcs.begin()) {
+    Serial.println("TCS34725 sensor not found");
+    while(1);
+  }
+  Serial.println("Liquid color identification system ready");
+}
+
+void loop() {
+  static uint32_t lastTime = 0;
+  if (millis() - lastTime < 1000) return; // Read once per second
+  lastTime = millis();
+
+  uint16_t r, g, b, c;
+  tcs.getRawData(&r, &g, &b, &c);
+
+  // Print raw values
+  Serial.print("R:"); Serial.print(r);
+  Serial.print(" G:"); Serial.print(g);
+  Serial.print(" B:"); Serial.print(b);
+  Serial.print(" C:"); Serial.print(c);
+  Serial.print(" - ");
+
+  // Identify color
+  String color = identifyLiquidColor(r, g, b, c);
+  Serial.println(color);
+}
+
+String identifyLiquidColor(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
+  // 1. Check light level
+  if (c < 5000) return "LowLight/NoLiquid";
+
+  // 2. Normalize values
+  float sum = r + g + b;
+  if (sum < 100) return "Black";
+  float nr = r/sum, ng = g/sum, nb = b/sum;
+
+  // 3. Check against predefined color ranges
+  for (int i = 0; i < colorCount; i++) {
+    const LiquidColor &lc = liquidColors[i];
+
+    if (c < lc.c_min) continue;
+
+    if (r >= lc.r_min && r <= lc.r_max &&
+        g >= lc.g_min && g <= lc.g_max &&
+        b >= lc.b_min && b <= lc.b_max) {
+      return lc.name;
+    }
+  }
+
+  // 4. Fallback to ratio-based detection
+  if (nr > 0.5 && ng < 0.3 && nb < 0.3) return "Red";
+  if (ng > 0.5 && nr < 0.3 && nb < 0.3) return "Green";
+  if (nb > 0.5 && nr < 0.3 && ng < 0.3) return "Blue";
+  if (nr > 0.4 && ng > 0.4 && nb < 0.2) return "Yellow";
+  if (nr > 0.4 && nb > 0.4 && ng < 0.2) return "Purple";
+  if (abs(nr - ng) < 0.1 && abs(ng - nb) < 0.1) {
+    return (c > 30000) ? "White" : "Gray";
+  }
+
+  return "Unknown";
+}
+
+// Calibration function
+void calibrate() {
+  uint16_t r, g, b, c;
+  tcs.getRawData(&r, &g, &b, &c);
+  Serial.print("Current Reading - R:"); Serial.print(r);
+  Serial.print(" G:"); Serial.print(g);
+  Serial.print(" B:"); Serial.print(b);
+  Serial.print(" C:"); Serial.println(c);
+}

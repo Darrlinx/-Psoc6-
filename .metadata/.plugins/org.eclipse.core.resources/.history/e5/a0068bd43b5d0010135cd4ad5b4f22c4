@@ -1,0 +1,86 @@
+#include <Arduino.h>
+#include "RTduino.h"
+#include "Config.h"
+#include <rtthread.h>
+
+#if defined IOT_THREAD_ENABLE
+#define DRIP_EVENT 1 << 4                // 滴速事件标志
+extern rt_event_t IOT_EVENT;             // IOT事件集
+rt_mq_t Drip_Rate_MQ = RT_NULL;          // 传递给IOT线程的消息队列
+#endif
+
+#if defined DIS_THREAD_ENABLE
+rt_mq_t Drip_Rate_MQ_Dis = RT_NULL;      // 传递给Display线程的消息队列
+#endif
+
+#define DRIP_SENSOR_PIN D7               // 滴速传感器引脚
+
+// 数据存储
+typedef struct {
+    uint32_t count;
+    float rate;
+} DripData_t;
+
+DripData_t drip_data = {0, 0.0f};
+uint32_t last_drip_time = 0;
+
+void Drip_setup() {
+    Serial.begin(115200);
+
+    // 初始化消息队列
+#if defined IOT_THREAD_ENABLE
+    Drip_Rate_MQ = rt_mq_create("Drip_MQ", sizeof(DripData_t), 5, RT_IPC_FLAG_FIFO);
+    if(Drip_Rate_MQ == RT_NULL) {
+        Serial.println("Drip Rate MQ Create Error");
+    }
+#endif
+
+#if defined DIS_THREAD_ENABLE
+    Drip_Rate_MQ_Dis = rt_mq_create("Drip_MQ_Dis", sizeof(DripData_t), 5, RT_IPC_FLAG_FIFO);
+    if(Drip_Rate_MQ_Dis == RT_NULL) {
+        Serial.println("Drip Rate MQ Display Create Error");
+    }
+#endif
+
+    pinMode(DRIP_SENSOR_PIN, INPUT);
+    last_drip_time = rt_tick_get();
+    Serial.println("Drip Sensor Initialized");
+}
+
+void Drip_loop() {
+    if(digitalRead(DRIP_SENSOR_PIN) == HIGH) {
+        drip_data.count++;
+        uint32_t current_time = rt_tick_get();
+        uint32_t interval = current_time - last_drip_time;
+
+        if(interval > 0) {
+            drip_data.rate = 60000.0f / (rt_tick_from_millisecond(interval));
+        }
+        last_drip_time = current_time;
+
+#ifndef NO_USING_DATA_OUTPUT
+        Serial.print("Count: "); Serial.print(drip_data.count);
+        Serial.print(", Rate: "); Serial.print(drip_data.rate); Serial.println(" dpm");
+#endif
+
+#if defined IOT_THREAD_ENABLE
+        if(IOT_EVENT != RT_NULL) {
+            rt_event_send(IOT_EVENT, DRIP_EVENT);
+            rt_mq_send(Drip_Rate_MQ, &drip_data, sizeof(DripData_t));
+        }
+#endif
+
+#if defined DIS_THREAD_ENABLE
+        rt_mq_send(Drip_Rate_MQ_Dis, &drip_data, sizeof(DripData_t));
+#endif
+    }
+
+    rt_thread_mdelay(100);  // 使用RT-Thread的延时
+}
+
+// RTduino线程初始化
+static int rtduino_init(void) {
+    rtduino_sketch_loader_create("RT_DRIP", Drip_setup, Drip_loop);
+    return 0;
+}
+INIT_COMPONENT_EXPORT(rtduino_init);

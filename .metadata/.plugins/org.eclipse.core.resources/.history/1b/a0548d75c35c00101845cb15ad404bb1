@@ -1,0 +1,80 @@
+/*
+ * Copyright (c) 2006-2021, RT-Thread Development Team
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Change Logs:
+ * Date           Author       Notes
+ * 2025-06-30     lenovo       the first version
+ */
+#include <Wire.h>
+#include "Adafruit_TCS34725.h"
+
+Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_614MS, TCS34725_GAIN_1X);
+
+// 函数声明
+String getColorName(uint16_t r, uint16_t g, uint16_t b);
+
+void setup(void) {
+  Serial.begin(115200);
+
+  if (tcs.begin()) {
+    Serial.println("Found sensor");
+  } else {
+    Serial.println("No TCS34725 found ... check your connections");
+    while (1);
+  }
+}
+
+void loop(void) {
+  uint16_t r, g, b, c, colorTemp, lux;
+
+  tcs.getRawData(&r, &g, &b, &c);
+  colorTemp = tcs.calculateColorTemperature_dn40(r, g, b, c);
+  lux = tcs.calculateLux(r, g, b);
+
+  String colorName = getColorName(r, g, b);
+
+  Serial.print("Color Temp: "); Serial.print(colorTemp, DEC); Serial.print(" K - ");
+  Serial.print("Lux: "); Serial.print(lux, DEC); Serial.print(" - ");
+  Serial.print("R: "); Serial.print(r, DEC); Serial.print(" ");
+  Serial.print("G: "); Serial.print(g, DEC); Serial.print(" ");
+  Serial.print("B: "); Serial.print(b, DEC); Serial.print(" ");
+  Serial.print("C: "); Serial.print(c, DEC); Serial.print(" ");
+  Serial.print("Color: "); Serial.print(colorName);
+  Serial.println(" ");
+}
+
+// 根据RGB值返回颜色名称
+String getColorName(uint16_t r, uint16_t g, uint16_t b) {
+  // 计算RGB的相对比例
+  float total = r + g + b;
+  if (total < 10) return "Black";  // 低光情况下视为黑色
+
+  float redRatio = r / total;
+  float greenRatio = g / total;
+  float blueRatio = b / total;
+
+  // 判断主要颜色
+  if (redRatio > 0.6 && greenRatio < 0.3 && blueRatio < 0.3) {
+    return "Red";
+  } else if (greenRatio > 0.6 && redRatio < 0.3 && blueRatio < 0.3) {
+    return "Green";
+  } else if (blueRatio > 0.6 && redRatio < 0.3 && greenRatio < 0.3) {
+    return "Blue";
+  } else if (redRatio > 0.4 && greenRatio > 0.4 && blueRatio < 0.2) {
+    return "Yellow";
+  } else if (redRatio > 0.3 && blueRatio > 0.3 && greenRatio < 0.3) {
+    return "Purple";
+  } else if (greenRatio > 0.4 && blueRatio > 0.4 && redRatio < 0.2) {
+    return "Cyan";
+  } else if (redRatio > 0.3 && greenRatio > 0.3 && blueRatio > 0.3) {
+    if (total > 2000) {  // 高值表示白色
+      return "White";
+    } else {
+      return "Gray";
+    }
+  } else {
+    return "Unknown";
+  }
+}

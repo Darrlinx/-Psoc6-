@@ -1,0 +1,82 @@
+//
+///*
+// * Copyright (c) 2006-2021, RT-Thread Development Team
+// *
+// * SPDX-License-Identifier: Apache-2.0
+// */
+//#include <Wire.h>
+//#include "Adafruit_TCS34725.h"
+//
+//Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_614MS, TCS34725_GAIN_1X);
+//
+//String getColorName(uint16_t r, uint16_t g, uint16_t b, uint16_t c);
+//
+//void setup(void) {
+//  Serial.begin(115200);
+//  if (tcs.begin()) {
+//    Serial.println("Found sensor");
+//  } else {
+//    Serial.println("No TCS34725 found ... check your connections");
+//    while (1);
+//  }
+//}
+//
+//void loop(void) {
+//  uint16_t r, g, b, c, colorTemp, lux;
+//  tcs.getRawData(&r, &g, &b, &c);
+//  colorTemp = tcs.calculateColorTemperature_dn40(r, g, b, c);
+//  lux = tcs.calculateLux(r, g, b);
+//
+//  String colorName = getColorName(r, g, b, c);
+//
+//  Serial.print("Color Temp: "); Serial.print(colorTemp); Serial.print(" K - ");
+//  Serial.print("Lux: "); Serial.print(lux); Serial.print(" - ");
+//  Serial.print("R: "); Serial.print(r); Serial.print(" ");
+//  Serial.print("G: "); Serial.print(g); Serial.print(" ");
+//  Serial.print("B: "); Serial.print(b); Serial.print(" ");
+//  Serial.print("C: "); Serial.print(c); Serial.print(" ");
+//  Serial.print("Color: "); Serial.print(colorName);
+//  Serial.println();
+//}
+//
+//String getColorName(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
+//  // 先检查光线是否足够（clear值太小则认为是黑色）
+//  if (c < 100) return "Black";  // 阈值可根据实际情况调整
+//
+//  // 计算归一化的RGB比例（0.0-1.0）
+//  float sum = r + g + b;
+//  if (sum < 10) return "Black";  // 防止除以零
+//
+//  float red = r / sum;
+//  float green = g / sum;
+//  float blue = b / sum;
+//
+//  // 调试输出比例值（可选）
+//  // Serial.print("RGB比例 - R:"); Serial.print(red);
+//  // Serial.print(" G:"); Serial.print(green);
+//  // Serial.print(" B:"); Serial.println(blue);
+//
+//  // 颜色判断逻辑（基于实际测试调整阈值）
+//  if (red > 0.5 && green < 0.3 && blue < 0.3) {
+//    return "Red";
+//  } else if (green > 0.5 && red < 0.3 && blue < 0.3) {
+//    return "Green";
+//  } else if (blue > 0.5 && red < 0.3 && green < 0.3) {
+//    return "Blue";
+//  } else if (red > 0.4 && green > 0.4 && blue < 0.2) {
+//    return "Yellow";
+//  } else if (red > 0.4 && blue > 0.4 && green < 0.2) {
+//    return "Purple";
+//  } else if (green > 0.4 && blue > 0.4 && red < 0.2) {
+//    return "Cyan";
+//  } else if (red > 0.3 && green > 0.3 && blue > 0.3) {
+//    // 根据亮度判断是白色还是灰色
+//    if (c > 30000) {  // 高clear值认为是白色
+//      return "White";
+//    } else {
+//      return "Gray";
+//    }
+//  } else {
+//    return "Unknown";
+//  }
+//}

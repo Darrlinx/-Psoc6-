@@ -1,0 +1,31 @@
+///*
+// * Copyright (c) 2006-2021, RT-Thread Development Team
+// *
+// * SPDX-License-Identifier: Apache-2.0
+// *
+// * Change Logs:
+// * Date           Author       Notes
+// * 2025-06-30     lenovo       the first version
+// */
+//#ifndef APPLICATIONS_MENU_H_
+//#define APPLICATIONS_MENU_H_
+//
+//#include "U8g2lib.h"
+//#include "wire.h"
+//#include <Adafruit_GFX.h>
+//#include <Adafruit_SSD1306.h>
+//
+//
+//#define BUTTON_UP_PIN D10
+//#define BUTTON_DOWN_PIN D2
+//
+//#define SCREEN_WIDTH 128 // OLED display width, in pixels
+//#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+//
+//#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+//#define SCREEN_ADDRESS 0x3C //由于SSD1306屏幕出场批次不同，地址有些区别，如果0x3C无法正常显示，可以切换成0x3D
+//
+//static void handleButtons(void) ;
+//static void drawMenu(void);
+//
+//#endif /* APPLICATIONS_MENU_H_ */

@@ -1,0 +1,171 @@
+//#include "hx.h"
+//
+//HX711::HX711(int SCK_PIN,int DT_PIN,float GapValueIn)
+//{
+//    HX711_SCK = SCK_PIN;
+//    HX711_DT = DT_PIN;
+//    ValueGap = GapValueIn;
+//}
+//
+////初始化HX711
+//void HX711::begin()
+//{
+//    pinMode(HX711_SCK, OUTPUT);
+//    pinMode(HX711_DT, INPUT);
+//
+//    Get_Maopi();
+//}
+//
+//int HX711::Pressed(int AlarmValue)
+//{
+//    if(Get_Weight() >= AlarmValue && CurrentAlarm == 0)
+//    {
+//        CurrentAlarm = 1;
+//        return 1;
+//    }
+//    else if(Get_Weight() < AlarmValue)
+//    {
+//        CurrentAlarm = 0;
+//        return 0;
+//    }
+//
+//    return 0;
+//}
+//
+////获取毛皮重量
+//void HX711::Get_Maopi()
+//{
+//    Weight_Maopi = HX711_Read();
+//}
+//
+////称重
+//long HX711::Get_Weight()
+//{
+//    HX711_Buffer = HX711_Read();
+//
+//    Weight_Shiwu = HX711_Buffer;
+//    Weight_Shiwu = Weight_Shiwu - Weight_Maopi;             //获取实物的AD采样数值。
+//
+//    Weight_Shiwu = (long)((float)Weight_Shiwu/ValueGap+0.05);
+//
+//    return Weight_Shiwu;
+//}
+//
+////读取HX711
+//unsigned long HX711::HX711_Read()   //增益128
+//{
+//    unsigned long count;
+//    unsigned char i;
+//    bool Flag = 0;
+//
+//    digitalWrite(HX711_DT, HIGH);
+//    delayMicroseconds(1);
+//
+//    digitalWrite(HX711_SCK, LOW);
+//    delayMicroseconds(1);
+//
+//    count=0;
+//    while(digitalRead(HX711_DT));
+//    for(i=0;i<24;i++)
+//    {
+//        digitalWrite(HX711_SCK, HIGH);
+//        delayMicroseconds(1);
+//        count=count<<1;
+//        digitalWrite(HX711_SCK, LOW);
+//        delayMicroseconds(1);
+//        if(digitalRead(HX711_DT))
+//            count++;
+//    }
+//    digitalWrite(HX711_SCK, HIGH);
+//    delayMicroseconds(1);
+//    digitalWrite(HX711_SCK, LOW);
+//    delayMicroseconds(1);
+//    count ^= 0x800000;
+//    return(count);
+//}
+//
+///**********************重力传感器初始化***********************/
+//#include "hx.h"
+//#include "RTduino.h"
+//#include "Config.h"
+//#include <rtthread.h>
+//
+//#if defined IOT_THREAD_ENABLE
+//#define HX711_EVENT 1 << 3                // HX711采集数据事件标志
+//extern rt_event_t IOT_EVENT;              // IOT事件集
+//rt_mq_t Weight_MQ = RT_NULL;              // 传递给IOT线程的消息队列
+//#endif
+//
+//#if defined DIS_THREAD_ENABLE
+//rt_mq_t Weight_MQ_Dis = RT_NULL;          // 传递给Display线程的消息队列
+//#endif
+//
+//// 全局HX711实例
+//HX711 HX711_CH0(D4, D2, 1620); // SCK, DT, GapValue
+//long Weight = 0;                // 存放重量值
+//
+//void HX711_setup() {
+//    Serial.begin();
+//
+//#if defined IOT_THREAD_ENABLE
+//    Weight_MQ = rt_mq_create("Weight_Mq", sizeof(long), 10, RT_IPC_FLAG_PRIO);
+//    if(Weight_MQ == RT_NULL) {
+//      Serial.println("Weight MessageQueue_IOT Create Error");
+//    }
+//#endif
+//
+//#if defined DIS_THREAD_ENABLE
+//    Weight_MQ_Dis = rt_mq_create("Weight_Mq_Dis", sizeof(long), 10, RT_IPC_FLAG_PRIO);
+//    if(Weight_MQ_Dis == RT_NULL) {
+//      Serial.println("Weight MessageQueue_Dis Create Error");
+//    }
+//#endif
+//
+//    // 初始化HX711传感器
+//    HX711_CH0.begin();
+//    delay(1000);  // 延时1s用于稳定
+//    HX711_CH0.begin();  // 重新读取毛重
+//
+//    Serial.println("HX711 initialized");
+//}
+//
+//void HX711_loop() {
+//    // 获取重量数据
+//    Weight = HX711_CH0.Get_Weight();
+//
+//#ifndef NO_USING_DATA_OUTPUT
+//    Serial.print("Weight: ");
+//    Serial.print(Weight);
+//    Serial.println(" g");
+//#endif
+//
+//#if defined IOT_THREAD_ENABLE
+//    // 当启动IOT线程的时候
+//    if(IOT_EVENT != RT_NULL) {
+//        // 触发事件，通知IOT线程来取
+//        if(rt_event_send(IOT_EVENT, HX711_EVENT) != RT_EOK) {
+//            Serial.println("Weight Event Send Error");
+//        }
+//        // 使用消息队列，将数据传输给IOT线程
+//        if(rt_mq_send_wait(Weight_MQ, &Weight, sizeof(Weight), 100) != RT_EOK) {
+//            Serial.println("Weight MQ Send To IOT Error");
+//        }
+//    }
+//#endif
+//
+//#if defined DIS_THREAD_ENABLE
+//    // 使用消息队列，将数据传输到Display线程
+//    if(rt_mq_send_wait(Weight_MQ_Dis, &Weight, sizeof(Weight), 1000) != RT_EOK) {
+//        Serial.println("Weight MQ Send To Dis Error");
+//    }
+//#endif
+//
+//    delay(500);  // 适当延迟，避免数据更新过快
+//}
+//
+//// RTduino线程初始化
+//static int rtduino_init(void) {
+//    rtduino_sketch_loader_create("RT_HX711", HX711_setup, HX711_loop);
+//    return 0;
+//}
+//INIT_COMPONENT_EXPORT(rtduino_init);

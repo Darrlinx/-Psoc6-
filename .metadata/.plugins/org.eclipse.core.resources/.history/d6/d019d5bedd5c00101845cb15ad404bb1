@@ -1,0 +1,120 @@
+/*
+ * TCS34725 Drainage Fluid Color Identification
+ */
+#include <Wire.h>
+#include "Adafruit_TCS34725.h"
+
+// 使用最大积分时间和增益
+Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_154MS, TCS34725_GAIN_1X);
+
+// 引流液颜色特征数据库
+struct FluidColor {
+  const char* name;
+  uint16_t r_min, r_max;
+  uint16_t g_min, g_max;
+  uint16_t b_min, b_max;
+  uint16_t c_min, c_max;
+  float hue_range[2]; // HSV色相范围
+};
+
+const FluidColor drainageFluids[] = {
+  {"Blood",      15000, 25000, 8000, 15000, 8000, 15000, 10000, 20000, {0.9, 1.1}},    // 深红色
+  {"Serous",     25000, 35000, 24000, 33000, 23000, 32000, 20000, 30000, {0.1, 0.3}},   // 淡黄色
+  {"Purulent",   22000, 32000, 20000, 30000, 15000, 25000, 18000, 28000, {0.4, 0.6}},   // 黄绿色
+  {"Bile",       18000, 28000, 20000, 30000, 10000, 20000, 15000, 25000, {0.6, 0.8}},    // 黄绿色
+  {"Urine",      20000, 30000, 22000, 32000, 18000, 28000, 20000, 30000, {0.2, 0.4}},    // 淡黄色
+  {"Clear",      30000, 40000, 30000, 40000, 30000, 40000, 35000, 45000, {0.0, 0.1}}     // 接近无色
+};
+
+const int fluidCount = sizeof(drainageFluids)/sizeof(drainageFluids[0]);
+
+void setup() {
+  Serial.begin(115200);
+  if (!tcs.begin()) {
+    Serial.println("Sensor not found");
+    while(1);
+  }
+  Serial.println("Drainage fluid monitor ready");
+}
+
+void loop() {
+  static uint32_t lastTime = 0;
+  if (millis() - lastTime < 2000) return; // 每2秒读取一次
+  lastTime = millis();
+
+  uint16_t r, g, b, c;
+  tcs.getRawData(&r, &g, &b, &c);
+
+  String fluidType = identifyDrainageFluid(r, g, b, c);
+
+  Serial.print("R:"); Serial.print(r);
+  Serial.print(" G:"); Serial.print(g);
+  Serial.print(" B:"); Serial.print(b);
+  Serial.print(" C:"); Serial.print(c);
+  Serial.print(" | Fluid: "); Serial.println(fluidType);
+}
+
+String identifyDrainageFluid(uint16_t r, uint16_t g, uint16_t b, uint16_t c) {
+  // 1. 转换为HSV颜色空间
+  float h, s, v;
+  RGBtoHSV(r, g, b, &h, &s, &v);
+
+  // 2. 检查液体量
+  if (c < 8000) return "LowVolume/Empty";
+
+  // 3. 精确匹配
+  for (int i = 0; i < fluidCount; i++) {
+    const FluidColor &fc = drainageFluids[i];
+
+    bool inRGBrange = (r >= fc.r_min && r <= fc.r_max) &&
+                      (g >= fc.g_min && g <= fc.g_max) &&
+                      (b >= fc.b_min && b <= fc.b_max) &&
+                      (c >= fc.c_min && c <= fc.c_max);
+
+    bool inHueRange = (h >= fc.hue_range[0] && h <= fc.hue_range[1]);
+
+    if (inRGBrange && inHueRange) {
+      return fc.name;
+    }
+  }
+
+  // 4. 模糊匹配
+  if (h > 0.8 && h < 1.2 && s > 0.6) return "Blood-like";
+  if (h > 0.3 && h < 0.6 && s > 0.4) return "Purulent-like";
+  if (h > 0.1 && h < 0.3 && s < 0.3) return "Serous-like";
+
+  return "Unknown";
+}
+
+// RGB转HSV函数
+void RGBtoHSV(uint16_t r, uint16_t g, uint16_t b, float *h, float *s, float *v) {
+  float nr = r / 65535.0;
+  float ng = g / 65535.0;
+  float nb = b / 65535.0;
+
+  float maxVal = max(nr, max(ng, nb));
+  float minVal = min(nr, min(ng, nb));
+  float delta = maxVal - minVal;
+
+  *v = maxVal;
+
+  if (delta < 0.0001) {
+    *h = 0;
+    *s = 0;
+    return;
+  }
+
+  *s = delta / maxVal;
+
+  if (nr >= maxVal) {
+    *h = (ng - nb) / delta;
+  } else if (ng >= maxVal) {
+    *h = 2.0 + (nb - nr) / delta;
+  } else {
+    *h = 4.0 + (nr - ng) / delta;
+  }
+
+  *h *= 60.0;
+  if (*h < 0) *h += 360.0;
+  *h /= 360.0; // 归一化到0-1
+}
